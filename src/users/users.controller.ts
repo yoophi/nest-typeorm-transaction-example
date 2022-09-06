@@ -70,4 +70,30 @@ export class UsersController {
       throw new BadRequestException(error);
     }
   }
+
+  @Post('/tx')
+  async sendMoneyToUserWithRepository(
+    @Body()
+    { from, to, amount }: { from: string; to: string; amount: number },
+  ) {
+    try {
+      await getManager().transaction(async (manager) => {
+        await this.usersRepository.sendMoney(manager, from, to, amount);
+
+        console.log(await manager.find(UserEntity));
+
+        const fromUser = await manager.findOne(UserEntity, { name: from });
+
+        console.log({ fromUser });
+
+        if (fromUser.money < 0) {
+          throw new Error('not enough money!');
+        }
+      });
+
+      return { message: 'transaction success' };
+    } catch (error) {
+      throw new BadRequestException(error);
+    }
+  }
 }
